@@ -1,0 +1,234 @@
+FRONTEND CODE
+
+<!DOCTYPE html> 
+<html lang="en"> 
+<head> 
+<meta charset="UTF-8" /> 
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Smart Gym Workout Scheduler</title> 
+<link 
+href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" 
+rel="stylesheet" /> 
+</head> 
+<body> 
+<button class="theme-toggle" onclick="toggleTheme()">Toggle Theme</button> 
+<h1>Smart Gym Workout Scheduler</h1> 
+<div class="scheduler"> 
+<form id="plan-form"> 
+<div class="form-group"> 
+<div class="form-row"> 
+<label for="duration">Max Daily Duration (mins)</label> 
+<input type="number" id="duration" min="5" value="30" step="5" /> 
+</div> 
+<div class="form-row"> 
+<label for="muscle">Primary Muscle Group</label> 
+<select id="muscle"> 
+<option>Chest</option> 
+<option>Back</option> 
+<option>Shoulders</option> 
+<option>Biceps</option> 
+<option>Triceps</option> 
+<option>Legs</option> 
+<option>Core</option> 
+<option>Full Body</option> 
+</select> 
+</div> 
+<div class="form-submit"> 
+<button type="submit">Generate 7-Day Plan</button> 
+</div> 
+</div>
+</form> 
+</div> 
+<h2>Your 7-Day Plan</h2> 
+<div id="plan"></div> 
+
+<script> 
+// Detect system theme 
+const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches; 
+if (prefersDark) document.documentElement.setAttribute('data-theme', 'dark'); 
+
+// Toggle theme manually
+function toggleTheme() { 
+    const current = document.documentElement.getAttribute('data-theme'); 
+    document.documentElement.setAttribute('data-theme', current === 'dark' ? 'light' : 'dark'); 
+} 
+
+// Handle form submission
+document.getElementById('plan-form').addEventListener('submit', async (e) => { 
+    e.preventDefault(); 
+    const max_duration = Number(document.getElementById('duration').value); 
+    const muscle_group = document.getElementById('muscle').value; 
+    
+    const res = await fetch('http://127.0.0.1:5000/generate-plan', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ muscle_group, max_duration }) 
+    }); 
+    
+    const plan = await res.json(); 
+    renderPlan(plan); 
+}); 
+
+// Render workout plan
+function renderPlan(plan) { 
+    const planEl = document.getElementById('plan'); 
+    planEl.innerHTML = ''; 
+    
+    plan.forEach((day, idx) => { 
+        const card = document.createElement('div'); 
+        card.className = 'day-card'; 
+        card.style.animationDelay = `${idx * 0.1}s`; 
+        card.innerHTML = `<h3>Day ${idx + 1} – ${day.muscle_group}</h3>`; 
+        
+        if (!day.exercises.length) { 
+            const noData = document.createElement('p'); 
+            noData.textContent = 'No exercises available.'; 
+            card.appendChild(noData); 
+        } 
+        
+        day.exercises.forEach(ex => { 
+            const item = document.createElement('div'); 
+            item.className = 'exercise'; 
+            
+            const img = document.createElement('img'); 
+            img.src = ex.image || 'https://via.placeholder.com/60'; 
+            img.alt = ex.name || 'Exercise'; 
+            
+            const info = document.createElement('div'); 
+            info.className = 'exercise-info'; 
+            info.innerHTML = ` 
+                <h4>${ex.name}</h4> 
+                <p>${ex.duration} mins · ${ex.muscle_group}</p> 
+                <p style="font-size:13px">${ex.description || 'No description available.'}</p> 
+            `; 
+            
+            item.addEventListener('click', () => { 
+                if (ex.video_link) { 
+                    window.open(ex.video_link, '_blank'); 
+                }
+            }); 
+            
+            item.appendChild(img); 
+            item.appendChild(info); 
+            card.appendChild(item); 
+        }); 
+        
+        planEl.appendChild(card); 
+    }); 
+} 
+</script> 
+</body> 
+</html>
+
+
+BACKEND CODE
+
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
+import json
+
+app = Flask(__name__)
+CORS(app)
+
+# Load exercises data from JSON
+with open('exercises.json') as f:
+    exercises = json.load(f)
+
+
+# Horspool's Algorithm for substring search
+def horspool_search(text, pattern):
+    m = len(pattern)
+    n = len(text)
+    if m > n:
+        return False
+
+    shift = {char: m for char in set(text)}
+    for i in range(m - 1):
+        shift[pattern[i]] = m - 1 - i
+
+    i = m - 1
+    while i < n:
+        k = 0
+        while k < m and pattern[m - 1 - k] == text[i - k]:
+            k += 1
+        if k == m:
+            return True
+        i += shift.get(text[i], m)
+    return False
+
+
+# Greedy algorithm to select exercises within max duration
+def select_exercises(target_group, max_duration):
+    selected = []
+    total_time = 0
+
+    # Filter relevant exercises by muscle group (case-insensitive substring search)
+    relevant = [
+        ex for ex in exercises
+        if horspool_search(ex["muscle_group"].lower(), target_group.lower())
+    ]
+
+    # Sort by duration (shortest first)
+    relevant.sort(key=lambda x: x["duration"])
+
+    for ex in relevant:
+        if total_time + ex["duration"] <= max_duration:
+            selected.append(ex)
+            total_time += ex["duration"]
+
+    return selected
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
+@app.route("/generate-plan", methods=["POST"])
+def generate_plan():
+    data = request.json
+    target_group = data.get("muscle_group")
+    max_duration = int(data.get("max_duration", 0))
+
+    if not target_group or not max_duration:
+        return jsonify({"error": "Missing data"}), 400
+
+    # List of all muscle groups for rotation
+    muscle_groups = [
+        "Chest", "Back", "Shoulders", "Biceps", "Triceps",
+        "Legs", "Core", "Full Body"
+    ]
+
+    # Rotate so the selected muscle group comes first
+    start_index = muscle_groups.index(target_group) if target_group in muscle_groups else 0
+    rotated = muscle_groups[start_index:] + muscle_groups[:start_index]
+
+    plan = []
+    for i in range(7):
+        muscle = rotated[i % len(rotated)]
+        daily_exercises = select_exercises(muscle, max_duration)
+        plan.append({
+            "day": i + 1,
+            "muscle_group": muscle,
+            "exercises": daily_exercises
+        })
+
+    return jsonify(plan)
+
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+JSON FILE
+
+{ 
+"name": "Push-ups", 
+"duration": 5, 
+"muscle_group": "Chest", 
+"description": "Bodyweight exercise targeting chest and triceps.", 
+"image":"https://media.istockphoto.com/id/498315681/photo/feeling-good-looking-great-from-wor
+ king-out-regularly.jpg?s=612x612&w=0&k=20&c=duQJAouxh66t4bmpiEWuYuQFyWRnHi53G1
+ EusiZzYd0=", 
+"video_link": "https://www.youtube.com/watch?v=_l3ySVKYVJ8" 
+}, 
