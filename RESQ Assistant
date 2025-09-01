@@ -1,0 +1,745 @@
+FRONTEND CODE 
+
+HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RESQ - Women's Safety Assistant</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 420px;
+            height: 600px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #8B5FBF 0%, #6366F1 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .chat-header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .chat-header p {
+            font-size: 0.9rem;
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .message {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .message.bot {
+            background: #F3F4F6;
+            color: #374151;
+            align-self: flex-start;
+            border-bottom-left-radius: 6px;
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #8B5FBF 0%, #6366F1 100%);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 6px;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background: #F3F4F6;
+            padding: 12px 16px;
+            border-radius: 18px;
+            border-bottom-left-radius: 6px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: #9CA3AF;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        .quick-actions {
+            padding: 0 20px 10px;
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .quick-btn {
+            background: rgba(139, 95, 191, 0.1);
+            color: #8B5FBF;
+            border: 1px solid rgba(139, 95, 191, 0.3);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .quick-btn:hover {
+            background: rgba(139, 95, 191, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .chat-input {
+            padding: 20px;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+            background: white;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            border: 2px solid #E5E7EB;
+            border-radius: 20px;
+            padding: 12px 16px;
+            font-family: inherit;
+            font-size: 0.95rem;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s ease;
+            min-height: 44px;
+            max-height: 100px;
+        }
+
+        textarea:focus {
+            border-color: #8B5FBF;
+        }
+
+        .send-btn, .panic-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 1.1rem;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .send-btn {
+            background: linear-gradient(135deg, #8B5FBF 0%, #6366F1 100%);
+            color: white;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .panic-btn {
+            background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+            color: white;
+            margin-left: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .panic-btn:hover {
+            animation: none;
+            transform: scale(1.05);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .panic-alert {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #EF4444;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-weight: 600;
+            z-index: 1000;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from { transform: translate(-50%, -100%); }
+            to { transform: translate(-50%, 0); }
+        }
+
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: rgba(139, 95, 191, 0.3);
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🛡 RESQ Assistant</h1>
+            <p>Your safety companion - here to help 24/7</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="message bot">
+                <div>Hello! I'm RESQ, your personal safety assistant. I'm here to provide support, resources, and help whenever you need it. How can I assist you today?</div>
+            </div>
+        </div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+
+        <div class="quick-actions">
+            <button class="quick-btn" onclick="sendQuickMessage('legal')">⚖ Legal Help</button>
+            <button class="quick-btn" onclick="sendQuickMessage('mental')">💚 Mental Health</button>
+            <button class="quick-btn" onclick="sendQuickMessage('safe')">📍 Safe Places</button>
+            <button class="quick-btn" onclick="sendQuickMessage('helpline')">📞 Helplines</button>
+        </div>
+
+        <div class="chat-input">
+            <div class="input-container">
+                <div class="input-wrapper">
+                    <textarea 
+                        id="messageInput" 
+                        placeholder="Type your message here..."
+                        rows="1"
+                        onkeydown="handleKeyPress(event)"
+                        oninput="adjustTextareaHeight(this)"
+                    ></textarea>
+                </div>
+                <button class="send-btn" onclick="sendMessage()" id="sendBtn">
+                    ➤
+                </button>
+                <button class="panic-btn" onclick="triggerPanic()" title="Emergency Panic Button">
+                    🚨
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const responses = {
+            legal: {
+                keywords: ['legal', 'law', 'rights', 'police', 'court', 'lawyer', 'harassment', 'abuse', 'violence'],
+                responses: [
+                    "You have the right to safety and protection. Here are your options:\n\n• Contact local legal aid: Many offer free consultations\n• Visit the nearest police station for immediate help\n• Call the Women's Helpline: 1091\n\nWould you like specific contact information for your area?",
+                    "Legal support is available 24/7. You can:\n\n• File a complaint at any police station\n• Get free legal aid through government schemes\n• Contact NGOs for legal assistance\n\nRemember: You are not to blame, and help is available."
+                ]
+            },
+            mental: {
+                keywords: ['stress', 'anxiety', 'depressed', 'mental', 'counseling', 'therapy', 'sad', 'overwhelmed', 'panic', 'fear'],
+                responses: [
+                    "Your mental health matters, and you're not alone. Here's what can help:\n\n• Try deep breathing: Inhale for 4, hold for 4, exhale for 6\n• Consider talking to a counselor or therapist\n• Call NIMHANS Helpline: 080-46110007\n\nWould you like me to guide you through a quick relaxation exercise?",
+                    "It's okay to not feel okay. You're brave for reaching out:\n\n• Talk to someone you trust\n• Try mindfulness or meditation apps\n• Professional help is available: Vandrevala Foundation 9999666555\n\nYour feelings are valid, and healing is possible."
+                ]
+            },
+            safe: {
+                keywords: ['safe', 'location', 'place', 'shelter', 'hide', 'escape', 'danger', 'threatened'],
+                responses: [
+                    "Here are safe places you can go:\n\n• Police stations (open 24/7)\n• Hospitals and medical centers\n• Women's shelters and support centers\n• Well-lit public places with people around\n\nTell me your city and I can help find specific locations near you.",
+                    "Your safety comes first. Immediate safe options:\n\n• Trusted friend or family member's house\n• 24/7 women's shelters\n• Public places like malls, libraries\n• Government offices during day hours\n\nTrust your instincts - if you feel unsafe, move to safety immediately."
+                ]
+            },
+            helpline: {
+                keywords: ['help', 'call', 'number', 'emergency', 'contact', 'support'],
+                responses: [
+                    "Here are important helpline numbers:\n\n🚨 Emergency: 112\n👩 Women's Helpline: 1091\n🏠 Domestic Violence: 181\n💚 Mental Health: 9152987821\n🆘 Childline: 1098\n\nSave these numbers in your phone. Help is always available!"
+                ]
+            },
+            health: {
+                keywords: ['health', 'medical', 'doctor', 'hospital', 'injury', 'medicine', 'checkup'],
+                responses: [
+                    "Your health and wellbeing matter:\n\n• Emergency medical help: Call 108\n• Visit nearest hospital or clinic\n• Government health centers offer free services\n• Aarogya Setu app for health info\n\nDon't hesitate to seek medical help when needed."
+                ]
+            },
+            relationships: {
+                keywords: ['relationship', 'boyfriend', 'husband', 'family', 'marriage', 'domestic', 'partner'],
+                responses: [
+                    "Healthy relationships are built on respect and trust:\n\n• You deserve to be treated with kindness\n• It's okay to set boundaries\n• Domestic Violence Helpline: 181\n• Consider couple's counseling if both are willing\n\nRemember: Love should never hurt."
+                ]
+            },
+            work: {
+                keywords: ['work', 'job', 'office', 'workplace', 'boss', 'colleague', 'harassment'],
+                responses: [
+                    "Workplace safety is your right:\n\n• Report harassment to HR immediately\n• Document incidents with dates and details\n• Contact Internal Complaints Committee\n• Labour helpline: 1800-11-8001\n\nYou have the right to a safe work environment."
+                ]
+            },
+            education: {
+                keywords: ['school', 'college', 'study', 'education', 'student', 'campus'],
+                responses: [
+                    "Educational institutions should be safe spaces:\n\n• Report any issues to college authorities\n• Contact student counseling services\n• UGC has guidelines for campus safety\n• Reach out to trusted teachers or mentors\n\nYour education and safety both matter."
+                ]
+            },
+            panic: {
+                responses: [
+                    "🚨 PANIC ALERT ACTIVATED 🚨\n\nI've noted your emergency. Here's what to do RIGHT NOW:\n\n1. Call 112 immediately if you're in danger\n2. Move to a safe, public place\n3. Contact someone you trust\n4. Stay on the line with emergency services\n\nYou are not alone. Help is coming."
+                ]
+            }
+        };
+
+        function addMessage(text, isUser = false) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = message ${isUser ? 'user' : 'bot'};
+            messageDiv.innerHTML = <div>${text.replace(/\n/g, '<br>')}</div>;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTyping() {
+            document.getElementById('typingIndicator').style.display = 'block';
+            document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+        }
+
+        function hideTyping() {
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        function getBotResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            
+            for (const [category, data] of Object.entries(responses)) {
+                if (category === 'panic') continue;
+                
+                for (const keyword of data.keywords) {
+                    if (lowerMessage.includes(keyword)) {
+                        const responseIndex = Math.floor(Math.random() * data.responses.length);
+                        return data.responses[responseIndex];
+                    }
+                }
+            }
+            
+            // Enhanced default responses
+            const defaultResponses = [
+                "I'm here to support you. Can you tell me more about what kind of help you need?",
+                "I understand you're reaching out for help. Would you like information about legal support, mental health resources, safe places, or emergency contacts?",
+                "Your safety and wellbeing are important. Let me know how I can best assist you today.",
+                "You're not alone in this. I can help with legal advice, mental health support, finding safe spaces, or emergency contacts. What would be most helpful?",
+                "I'm here to listen and help. Whether you need immediate assistance or just someone to talk to, I'm ready to support you.",
+                "Thank you for trusting me with your concerns. How can I best support you right now?"
+            ];
+            
+            return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            addMessage(message, true);
+            input.value = '';
+            adjustTextareaHeight(input);
+            
+            showTyping();
+            
+            setTimeout(() => {
+                hideTyping();
+                const response = getBotResponse(message);
+                addMessage(response);
+            }, 1000 + Math.random() * 1000);
+        }
+
+        function sendQuickMessage(type) {
+            const quickMessages = {
+                legal: "I need legal help and information about my rights",
+                mental: "I'm feeling stressed and need mental health support",
+                safe: "I need to find safe places near me",
+                helpline: "I need emergency contact numbers and helplines"
+            };
+            
+            const message = quickMessages[type];
+            addMessage(message, true);
+            
+            showTyping();
+            
+            setTimeout(() => {
+                hideTyping();
+                const response = responses[type].responses[0];
+                addMessage(response);
+            }, 800);
+        }
+
+        function triggerPanic() {
+            // Create panic alert
+            const alert = document.createElement('div');
+            alert.className = 'panic-alert';
+            alert.textContent = '🚨 EMERGENCY ALERT ACTIVATED 🚨';
+            document.body.appendChild(alert);
+            
+            setTimeout(() => alert.remove(), 5000);
+            
+            // Add panic message
+            addMessage("🚨 EMERGENCY HELP NEEDED 🚨", true);
+            
+            showTyping();
+            
+            setTimeout(() => {
+                hideTyping();
+                const response = responses.panic.responses[0];
+                addMessage(response);
+            }, 500);
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        function adjustTextareaHeight(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 100) + 'px';
+        }
+
+        // Initialize
+        document.getElementById('messageInput').focus();
+    </script>
+</body>
+</html>
+
+style.css
+/* Reset */
+* {
+  box-sizing: border-box;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+  margin: 0;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.container {
+  background: white;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 15px 25px rgba(0,0,0,0.15);
+  display: flex;
+  flex-direction: column;
+  height: 90vh;
+}
+
+h1 {
+  text-align: center;
+  font-family: 'Dancing Script', cursive;
+  color: #7b2ff7;
+  margin-bottom: 20px;
+  font-size: 2.4rem;
+}
+
+/* Chat window */
+
+.chat-window {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 10px;
+  border: 2px solid #d3c6f0;
+  border-radius: 10px;
+  background: #f4f0ff;
+  margin-bottom: 15px;
+  scroll-behavior: smooth;
+}
+
+/* Chat messages */
+
+.chat-message {
+  max-width: 70%;
+  margin: 8px 0;
+  padding: 12px 16px;
+  border-radius: 20px;
+  word-wrap: break-word;
+  line-height: 1.3;
+  font-size: 1rem;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.1);
+}
+
+.chat-message.user {
+  background: #b7d7f7;
+  color: #1d3557;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-message.bot {
+  background: #f5c6f9;
+  color: #4a148c;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+/* Form styles */
+
+textarea {
+  width: 100%;
+  resize: none;
+  border-radius: 12px;
+  border: 2px solid #bda0ff;
+  padding: 12px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #4a148c;
+  transition: border-color 0.3s ease;
+  margin-bottom: 10px;
+}
+
+textarea:focus {
+  outline: none;
+  border-color: #7b2ff7;
+}
+
+.quick-access {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+
+.quick-access button {
+  background: #c39ee3;
+  border: none;
+  color: white;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.25s ease;
+  font-size: 0.9rem;
+}
+
+.quick-access button:hover {
+  background: #7b2ff7;
+}
+
+.buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+button[type="submit"] {
+  background: #7b2ff7;
+  border: none;
+  color: white;
+  font-weight: 700;
+  font-size: 1.1rem;
+  padding: 12px 24px;
+  border-radius: 25px;
+  cursor: pointer;
+  transition: background 0.25s ease;
+}
+
+button[type="submit"]:hover {
+  background: #5319e7;
+}
+
+button.panic {
+  background: #f44336;
+}
+
+button.panic:hover {
+  background: #d32f2f;
+}
+
+
+
+BACKEND CODE
+
+from flask import Flask, render_template, request, session
+from flask_session import Session
+
+app = Flask(_name_)
+app.secret_key = "supersecretkey"
+app.config["SESSION_TYPE"] = "filesystem"
+Session(app)
+
+RESPONSES = {
+    "legal": {
+        "help": "You can contact local legal aid centers or visit the nearest police station for help.",
+        "rights": "You have the right to safety and protection under the law. Would you like contact info for legal aid?",
+        "default": "Please tell me what legal support you need."
+    },
+    "mental": {
+        "stress": "Try some breathing exercises or meditation. Would you like me to guide you?",
+        "anxiety": "Remember you are not alone. Talking to a counselor can help.",
+        "default": "Please tell me how I can support your mental health."
+    },
+    "safe": {
+        "bangalore": "Safe spots in Bangalore include local police stations, hospitals, and women's shelters.",
+        "default": "Tell me your location or city to find nearby safe spots."
+    },
+    "helpline": {
+        "emergency": "You can call 112 for immediate help in India.",
+        "support": "Here are helpline numbers: Women Helpline - 1091, Domestic Violence - 181",
+        "default": "Do you want emergency numbers or support services?"
+    },
+    "panic": {
+        "default": "Panic button activated! Help is on the way."
+    },
+    "default": {
+        "rape": "Please contact 112 or visit your nearest police station or hospital immediately. You are not to blame.",
+        "sleep": "Try turning off screens 1 hour before bed, and use calming sounds. Would you like some breathing exercises?",
+        "default": "I'm here to help you. Please ask your question or select a topic."
+    }
+}
+
+def get_response(intent, message):
+    intent = (intent or "default").lower()
+    message = (message or "").lower()
+
+    if intent not in RESPONSES:
+        intent = "default"
+
+    intent_responses = RESPONSES[intent]
+
+    # Check if any keyword matches in message
+    for keyword, response in intent_responses.items():
+        if keyword == "default":
+            continue
+        if keyword in message:
+            return response
+
+    # Return default if no keywords matched
+    return intent_responses.get("default", "Sorry, I didn't understand that.")
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if "chat_history" not in session:
+        session["chat_history"] = []
+
+    panic = False
+
+    if request.method == "POST":
+        user_input = request.form.get("user_input", "").strip()
+        intent = request.form.get("intent", "").strip().lower()
+        panic = "panic" in request.form
+
+        # Panic button works even if user_input is empty (no required)
+        if panic:
+            bot_response = RESPONSES["panic"]["default"]
+            # Append panic bot message
+            session["chat_history"].append({"sender": "bot", "text": bot_response})
+            session.modified = True
+            return render_template("index.html", chat_history=session["chat_history"], panic=True)
+
+        # If user_input is empty (non-panic), don't respond or add to history
+        if not user_input:
+            return render_template("index.html", chat_history=session["chat_history"], panic=False)
+
+        # Otherwise normal flow
+        bot_response = get_response(intent, user_input)
+
+        # Append user message and bot response to chat history
+        session["chat_history"].append({"sender": "user", "text": user_input})
+        session["chat_history"].append({"sender": "bot", "text": bot_response})
+        session.modified = True
+
+        return render_template(
+            "index.html", chat_history=session["chat_history"], panic=False
+        )
+
+    # GET method
+    return render_template("index.html", chat_history=session.get("chat_history", []), panic=False)
+
+
+if _name_ == "_main_":
+    app.run(debug=True)
+
